@@ -1,8 +1,11 @@
 name: "Release apps"
 
 # App-slot dropdowns are managed by .github/scripts/update_release_workflow.py
-# (run it after adding/removing apps). The `tag` dropdown is managed by the
-# "Refresh tag dropdown" step at the end of this workflow.
+# (run it after adding/removing apps). The `tag` dropdown is managed by
+# .github/scripts/update_tag_choices.py — run it locally and commit when you
+# want recent release tags to show up in the picker:
+#   gh api repos/<owner>/<repo>/releases --paginate -q '.[].tag_name' \
+#     | python3 .github/scripts/update_tag_choices.py --keep 15
 
 on:
   workflow_dispatch:
@@ -2176,21 +2179,3 @@ jobs:
 
             Included apps:
             ${{ env.RESOLVED_APPIDS_MD }}
-
-      - name: "Refresh tag dropdown"
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          cd applications/external
-          gh api repos/${{ github.repository }}/releases --paginate \
-              -q '.[].tag_name' \
-            | python3 .github/scripts/update_tag_choices.py --keep 15
-          if ! git diff --quiet .github/workflows/release-app.yml; then
-            git config user.name 'github-actions[bot]'
-            git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-            git add .github/workflows/release-app.yml
-            git commit -m "Refresh tag dropdown after ${{ env.RESOLVED_TAG }}"
-            git push origin HEAD:${{ github.ref_name }}
-          else
-            echo "Tag dropdown already current."
-          fi
